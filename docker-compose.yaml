@@ -1,0 +1,11 @@
+version: '2'
+services:
+  bbs_backend:
+    image: bobbai/bbs_backend
+    ports: 
+      - "5000:5000"
+  
+  bbs_frontend:
+    image: bobbai/bbs_frontend
+    ports: 
+      - "3000:3000"
