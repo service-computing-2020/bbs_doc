@@ -1,5 +1,8 @@
 # BBS: 轻量级论坛系统
 
+## 项目简介
+BBS 是一个简介好用的论坛，在BBS上，你可以浏览丰富多彩的主题论坛，浏览他人的帖子，评论他人的帖子，当然也可以通过帖子的形式分享你所想要分享的；如果不想让别人知道你的名字，每个论坛都有树洞，在树洞里所有的帖子都是匿名的；同时你也可以创建属于自己的论坛，邀请你的好友加入你的论坛进行讨论，如果你不想公开你们的讨论，论坛支持私有创建，其中的内容只有论坛成员才可见。
+
 ## 技术栈
 前端：使用基于 `React` 的 `Next.js` 框架    
 后端：
@@ -68,6 +71,18 @@ docker-compose up
     ```
     npm run start
     ```
+## API 文档访问方式
+
+在您的浏览器（推荐火狐浏览器，谷歌浏览器可能会因为“不安全的”原因无法访问）输入：`http://bobby.run:30086/swagger/index.html`, 可以看到如下的画面：
+![](https://tva1.sinaimg.cn/large/0081Kckwgy1gls0gamz1sj31ba0u01ap.jpg)
+将图中红色框的地址更换为：`http://bobby.run:30086/swagger/doc.json`, 可以看到：
+![](https://tva1.sinaimg.cn/large/0081Kckwgy1gls0icm9pkj31ba0u0h7q.jpg)
+下面便是我们本次后端的所有 API。
+
+## 前端界面展示
+
+
+## 后端设计
 
 
 
