@@ -22,6 +22,7 @@ BBS 是一个简介好用的论坛，在BBS上，你可以浏览丰富多彩的�
 
 - 部署方法：
   
+
 首先进入`bbs_doc`目录
 ```
 cd bbs_doc
@@ -84,9 +85,172 @@ docker-compose up
 
 ## 后端设计
 
+#### 流程概览
 
+![web应用工作流程](images/web应用工作流程.png)
 
+图示解释（前面技术栈提到是`gin`框架）：
 
++ 多路复用器
+
+  + 路由注册：
+
+    使用`func (group *RouterGroup) XXX(relativePath string, handlers ...HandlerFunc) IRoutes`等系列方法进行路由注册，本次使用的主要有`GET/POST/PUT/DELETE/PATCH`等。这部分代码放在总控`main.go`中。
+
+    同时注意到需要解决跨域、鉴权等问题，所以依旧是路由注册时链接上中间件，分别是解决跨域的中间件、JWT鉴权的中间件，注册方式例子：
+
+    ```go
+    userRouter.Use(middlewares.VerifyJWT())
+    userRouter.GET("", controllers.GetAllUsers)
+    ```
+
+    或者：
+
+    ```go
+    singleForumRouter.POST("/cover", middlewares.VerifyJWT(), controllers.UploadCover)
+    ```
+
+  + 请求分发：
+
+    由`gin`框架的`Engine`进行请求的分发，从而将请求的响应交给中间件或控制器控制。
+
++ 处理器
+
+  + 控制器：
+
+    控制器包含请求的处理，其函数签名为`func (c *gin.Context)`即可在复用器小节中进行路由注册，控制器会与模型交互，一个例子如下：
+
+    ```go
+    func GetAllUsers(c *gin.Context) {
+    	log.Info("get all users controller")
+    
+    	var data []models.User
+    	var err error
+    	query := c.Query("username")
+    	if query != "" {
+    		data, err = models.GetAllUsersContains(query)
+    	} else {
+    		data, err = models.GetAllUsers()
+    	}
+    	if err != nil {
+    		c.JSON(http.StatusInternalServerError, gin.H{"code": 500, "msg": "服务器错误: " + err.Error(), "data": data})
+    		return
+    	}
+    
+    	c.JSON(http.StatusOK, gin.H{"code": 200, "msg": "获取全部用户", "data": data})
+    }
+    ```
+
+  + 中间件：
+
+    这部分代码都放在`middlewares/`下。中间件上面已经提到过，这里给一个JWT鉴权中间件的例子：
+
+    ```go
+    func VerifyJWT() gin.HandlerFunc {
+    	return func(c *gin.Context) {
+    		log.Info("verify jwt middleware")
+    		isError := false
+    		var data interface{}
+    		token := ExtractToken(c.Request)
+    		if token == "" {
+    			isError = true
+    			c.JSON(http.StatusBadRequest, gin.H{
+    				"code": 400,
+    				"msg":  "缺少token",
+    				"data": data,
+    			})
+    		} else {
+    			claims, err := service.ParseToken(token)
+    			if err != nil {
+    				isError = true
+    				c.JSON(http.StatusInternalServerError, gin.H{
+    					"code": 500,
+    					"msg":  "token校验发生错误",
+    					"data": data,
+    				})
+    			} else if time.Now().Unix() > claims.ExpiresAt {
+    				isError = true
+    				c.JSON(http.StatusForbidden, gin.H{
+    					"code": 403,
+    					"msg":  "token已过期",
+    					"data": data,
+    				})
+    			} else {
+    				c.Set("Claims", claims)
+    			}
+    
+    		}
+    
+    		if isError {
+    			c.Abort()
+    			return
+    		}
+    		c.Next()
+    	}
+    }
+    ```
+
++ 模型
+
+  + 与持久化层交互：
+
+    具体代码在`models/`下，在这里主要是对从数据库中获取的结果进行基本转化，转化为模型。
+
+    例如：
+
+    ```go
+    // User的模型
+    type User struct {
+    	UserId   int    `json:"user_id"`
+    	Username string `json:"username"`
+    	Email    string `json:"email"`
+    	Password string `json:"password"`
+    	IsAdmin  bool   `json:"is_admin"`
+    	Avatar   string `json:"avatar"`
+    	CreateAt string `json:"create_at"`
+    }
+    
+    // 将数据库查询的结果转换为 User
+    func convertMapToUser(user map[string]string) User {
+    	user_id, _ := strconv.Atoi(user["user_id"])
+    	is_admin := false
+    	if user["is_admin"] == "1" {
+    		is_admin = true
+    	}
+    
+    	return User{UserId: user_id, Username: user["username"], Email: user["email"], Password: user["password"], IsAdmin: is_admin, Avatar: user["avatar"], CreateAt: user["create_at"]}
+    }
+    
+    // 与数据库交互得到未加工数据
+    func GetAllUsers() ([]User, error) {
+    	var ret []User
+    
+    	res, err := QueryRows("SELECT user_id, username, password, email,is_admin, create_at, avatar FROM user")
+    
+    	if err != nil {
+    		return nil, err
+    	}
+    
+    	for _, r := range res {
+    		ret = append(ret, convertMapToUser(r))
+    	}
+    
+    	return ret, err
+    }
+    
+    ```
+
+  + 封装并为上层提供服务：
+
+    具体代码在`service/`下，任务在于将于数据库交互得到的未加工数据进行加工、封装为控制器语义下需要的数据，其实就是基于数据库的数据对外提供具有语义信息的服务，比如用户注册时用户名或邮箱是否存在等等。
+
+    
+
++ 数据库
+
+  + 这里指的是持久化层：
+    + 结构化数据：mysql
+    + 非结构化数据：minio
 
 
 
