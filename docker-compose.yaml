@@ -6,6 +6,6 @@ services:
       - "5000:5000"
   
   bbs_frontend:
-    image: bobbai/bbs_frontend
+    image: bobbai/bbs_frontend:local
     ports: 
       - "3000:3000"
