@@ -93,6 +93,18 @@ docker-compose up
 ![](https://tva1.sinaimg.cn/large/0081Kckwgy1gls0icm9pkj31ba0u0h7q.jpg)
 下面便是我们本次后端的所有 API。
 
+## API 设计
+本次项目的所有后端 API 都严格遵守 restful api 风格。例如:
+#### 用户登录和用户注册
+- 登录：PUT /users 
+- 注册：POST /users
+这里用户资源统一使用 `users`, 使用 HTTP 方法的不同语义来群分对资源的操作，即 PUT 是提交信息交给服务器校验，而 POST 是创建一个资源。
+
+#### 获取某个论坛下的某个post
+- URL: /forums/:forum_id/posts/:post_id
+- HTTP 方法: GET
+这里很清晰的体现了资源的层次结构，即posts隶属于forums下，用id进行标示
+
 ## 前端设计
 前端使用 `React` 生态中比较有名的框架 `Next.js` 作为基础框架；UI 组件使用了 Ant-design 中提供的组件。其中的所有组件都使用了 React 中的函数式组件，并结合了 `React Hook`. 大致界面构成为：
 - 登陆界面
